@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат на веб-сокетах | Личные сообщения</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Шапка чата */
+        .chat-header {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .chat-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* Основная область */
+        .chat-main {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            background: #f0f2f5;
+        }
+        
+        /* Область сообщений */
+        .messages-area {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            background: #f5f7fb;
+        }
+        
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+        
+        /* Стили сообщений */
+        .message {
+            background: white;
+            padding: 12px 18px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            word-wrap: break-word;
+            animation: fadeIn 0.3s;
+            max-width: 80%;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Системные сообщения */
+        .message.system {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-style: italic;
+            text-align: center;
+            max-width: 100%;
+            font-size: 13px;
+            border-radius: 20px;
+        }
+        
+        /* Обычные сообщения */
+        .message.message {
+            background: white;
+            border-bottom-left-radius: 4px;
+        }
+        
+        /* Личные сообщения (полученные) */
+        .message.private {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-weight: 500;
+        }
+        
+        /* Личные сообщения (отправленные) */
+        .message.self-private {
+            background: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            font-style: italic;
+            color: #666;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        /* Свои обычные сообщения */
+        .message.own-message {
+            background: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        /* Область ввода */
+        .input-area {
+            background: white;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #messageInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        #messageInput:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74,144,226,0.1);
+        }
+        
+        #sendButton {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 15px 30px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #sendButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(74,144,226,0.4);
+        }
+        
+        #sendButton:active {
+            transform: scale(0.95);
+        }
+        
+        /* Боковая панель */
+        .sidebar {
+            flex: 1;
+            background: white;
+            border-left: 1px solid #e0e0e0;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .sidebar h3 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4a90e2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Список пользователей */
+        #usersList {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        #usersList div {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+        
+        #usersList div:hover {
+            background: #e9ecef;
+            border-color: #4a90e2;
+            transform: translateX(5px);
+        }
+        
+        /* Селект получателей */
+        .recipient-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .recipient-section label {
+            font-size: 13px;
+            color: #666;
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        #recipientSelect {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        #recipientSelect:hover {
+            border-color: #4a90e2;
+        }
+        
+        #recipientSelect:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74,144,226,0.1);
+        }
+        
+        .private-hint {
+            font-size: 12px;
+            color: #ff9800;
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 3px solid #ff9800;
+        }
+        
+        /* Информационные сообщения */
+        .info-text {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #999;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        
+        .info-text p {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Полоса прокрутки */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* Статус подключения */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .chat-main {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                border-left: none;
+                border-top: 1px solid #e0e0e0;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        /* Стили для даты */
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* Стили для непрочитанных */
+        .message.unread {
+            position: relative;
+        }
+
+        .message.unread::after {
+            content: '●';
+            color: #4a90e2;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+        }
+
+        /* Иконки */
+        .icon {
+            font-size: 18px;
+        }
+
+        /* Анимация для новых сообщений */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Шапка чата -->
+        <div class="chat-header">
+            <h1>
+                <span class="icon">💬</span> 
+                Чат на веб-сокетах
+            </h1>
+            <p>Общайся с друзьями в реальном времени ✨</p>
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span id="connectionText">Подключение...</span>
+            </div>
+        </div>
+        
+        <!-- Основная область -->
+        <div class="chat-main">
+            <!-- Область сообщений -->
+            <div class="messages-area">
+                <div id="messages">
+                    <!-- Сообщения будут появляться здесь -->
+                </div>
+                
+                <!-- Область ввода -->
+                <div class="input-area">
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Введите сообщение для всех..." 
+                            autocomplete="off"
+                        >
+                        <button id="sendButton">
+                            <span class="icon">📤</span>
+                            Отправить
+                        </button>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: #999;">
+                        <span>⏎ Enter - отправить</span>
+                        <span id="recipientHint"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Боковая панель -->
+            <div class="sidebar">
+                <h3>
+                    <span class="icon">👥</span> 
+                    Участники чата
+                </h3>
+                
+                <!-- Список пользователей -->
+                <div id="usersList">
+                    <div style="color: #999; text-align: center;">Загрузка участников...</div>
+                </div>
+                
+                <!-- Блок отправки личных сообщений -->
+                <div class="recipient-section">
+                    <label for="recipientSelect">
+                        <span class="icon">📨</span> 
+                        Отправить сообщение:
+                    </label>
+                    <select id="recipientSelect">
+                        <option value="all">📢 Всем участникам</option>
+                    </select>
+                    <div class="private-hint">
+                        <span class="icon">💡</span> 
+                        Выберите получателя для личного сообщения<br>
+                        или кликните на имя в списке
+                    </div>
+                </div>
+                
+                <!-- Информационный блок -->
+                <div class="info-text">
+                    <p><span class="icon">🎨</span> Ваши сообщения — цветные</p>
+                    <p><span class="icon">✉️</span> Жёлтый фон — личное сообщение</p>
+                    <p><span class="icon">🟢</span> Зелёная точка — онлайн</p>
+                    <p><span class="icon">👆</span> Клик по имени — личное сообщение</p>
+                    <p><span class="icon">🔔</span> Системные уведомления</p>
+                </div>
+                
+                <!-- Информация о пользователе -->
+                <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%); border-radius: 12px;">
+                    <p style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span class="icon">👤</span>
+                        <span id="currentUserName" style="font-weight: bold;">Загрузка...</span>
+                    </p>
+                    <p style="display: flex; align-items: center; gap: 10px;">
+                        <span class="icon">🎨</span>
+                        <span id="currentUserColor" style="padding: 3px 10px; border-radius: 15px;">Цвет...</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="client.js"></script>
+</body>
+</html>
