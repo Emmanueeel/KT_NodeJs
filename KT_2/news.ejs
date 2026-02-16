@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новости <%= category %> | Ведомости</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #01092c 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgb(196, 191, 191);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #020a2e 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .news-list {
+            list-style: none;
+        }
+        
+        .news-item {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        
+        .news-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .news-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .news-title a {
+            color: #2d3748;
+            text-decoration: none;
+        }
+        
+        .news-title a:hover {
+            color: #667eea;
+        }
+        
+        .news-meta {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #718096;
+        }
+        
+        .news-meta span {
+            display: flex;
+            align-items: center;
+        }
+        
+        .news-description {
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+        
+        .read-more {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .read-more:hover {
+            text-decoration: underline;
+        }
+        
+        .footer {
+            background: #f7fafc;
+            padding: 20px 30px;
+            text-align: center;
+            color: #718096;
+            font-size: 13px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .no-news {
+            text-align: center;
+            padding: 50px;
+            color: #718096;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Новости Ведомости</h1>
+            <p><%= count %> последних новостей в категории</p>
+            <span class="category-badge"><%= category %></span>
+        </div>
+        
+        <div class="content">
+            <% if (newsItems && newsItems.length > 0) { %>
+                <div class="news-list">
+                    <% newsItems.forEach((item, index) => { %>
+                        <article class="news-item">
+                            <h2 class="news-title">
+                                <a href="<%= item.link %>" target="_blank">
+                                    Новость <%= index + 1 %>: <%= item.title %>
+                                </a>
+                            </h2>
+                            
+                            <div class="news-meta">
+                                <span>Дата: <%= new Date(item.pubDate).toLocaleDateString('ru-RU', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                }) %></span>
+                                
+                                <% if (item.author) { %>
+                                    <span>Автор: <%= item.author %></span>
+                                <% } %>
+                            </div>
+                            
+                            <% if (item.description) { %>
+                                <div class="news-description">
+                                    <%= item.description.replace(/<[^>]*>/g, '').substring(0, 300) %>...
+                                </div>
+                            <% } %>
+                            
+                            <a href="<%= item.link %>" class="read-more" target="_blank">
+                                Читать далее →
+                            </a>
+                        </article>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <div class="no-news">
+                    <p>Новости не найдены</p>
+                </div>
+            <% } %>
+        </div>
+        
+        <div class="footer">
+            <p>Запрос выполнен: <%= requestDate || new Date().toLocaleString('ru-RU') %></p>
+            <a href="/" class="back-link">← Вернуться на главную</a>
+        </div>
+    </div>
+</body>
+</html>
